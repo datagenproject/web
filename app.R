@@ -5,40 +5,41 @@ library(ggplot2)  # for the diamonds dataset
 
 # See above for the definitions of ui and server
 ui <- fluidPage(
-    titlePanel("hola"),
-    sidebarLayout(
-        sidebarPanel(
-            dat <- fileInput("file1", "Choose CSV File"),
-            conditionalPanel(
-                'input.dataset === "iris"',
-                helpText("Display 5 records by default.")
+    titlePanel("SmallMol S.L."),
+    tabsetPanel(
+        tabPanel("Taula",
+            sidebarPanel(
+                fileInput("file1", "Choose CSV File"),
+                     
+                checkboxInput("iChEMBL.ID", label = "ChEMBL ID", value = TRUE),
+                checkboxInput("iName", label = "Name"),
+                checkboxInput("iMolecular.Weight", label = "Molecular Weight"),
+                checkboxInput("iTargets", label = "Targets"),
+                checkboxInput("iBioactivities", label = "Bioactivities"),
+                checkboxInput("iAlogP", label = "AlogP"),
+                checkboxInput("iPolar.Surface.Area", label = "Polar Surface Area"),
+                checkboxInput("iHBA..Lipinski.", label = "HBA Lipinski"),
+                checkboxInput("iHBD..Lipinski.", label = "HBD Lipinski"),
+                checkboxInput("iX.RO5.Violations..Lipinski.", label = "X RO5 Violations Lipinski")
             ),
-           
-            checkboxInput("iChEMBL.ID", label = "ChEMBL ID", value = TRUE),
-            checkboxInput("iName", label = "Name"),
-            checkboxInput("iMolecular.Weight", label = "Molecular Weight"),
-            checkboxInput("iTargets", label = "Targets"),
-            checkboxInput("iBioactivities", label = "Bioactivities"),
-            checkboxInput("iAlogP", label = "AlogP"),
-            checkboxInput("iPolar.Surface.Area", label = "Polar Surface Area"),
-            checkboxInput("iHBA..Lipinski.", label = "HBA Lipinski"),
-            checkboxInput("iHBD..Lipinski.", label = "HBD Lipinski"),
-            checkboxInput("iX.RO5.Violations..Lipinski.", label = "X RO5 Violations Lipinski")
+            mainPanel(
+                DT::dataTableOutput("table1")
+            )
         ),
-        mainPanel(
-            tabsetPanel(
-                id = 'dataset',
-                tabPanel("Taula", DT::dataTableOutput("table1")),
-                tabPanel("Gràfics", 
-                         plotOutput("g1"),
-                         plotOutput("g2"),
-                         plotOutput("g3"),
-                         plotOutput("g4"),
-                         plotOutput("g5"),
-                         plotOutput("g6")
-                )
-            ),
-            tableOutput("contents")
+        tabPanel("Gràfics", 
+                 fluidRow(
+                    column(6,
+                        plotOutput("g1"),
+                        plotOutput("g3"),
+                        plotOutput("g5")
+                    ),
+                    column(6,
+                        plotOutput("g2"),
+                        plotOutput("g4"),
+                        plotOutput("g6")
+                        
+                    )
+                 )
         )
     )
 )
@@ -86,21 +87,47 @@ server <- function(input, output) {
     #     DT::datatable(iris, options = list(lengthMenu = c(5, 10, 15, 20), pageLength = 15))
     # })
     
-    output$g1 <- renderPlot({
+    dfg1 <- reactive({
         
-        df1 <- data.frame()
+        req(input$file1)
         
-        barplot(1,
-                ylab="idk1",
-                xlab="idk2")
+        inFile <- input$file1 
+        df <- read.csv(inFile$datapath, header = TRUE, sep = ";")
+        
+        df <- df[c("Molecular.Weight")]
+        
+        return(df)
     })
+    
+    output$g1 <- renderPlot({
+        mw <- dfg1()[,"Molecular.Weight"]
+ 
+        barplot(mw,
+                ylab="Molecular Weight (Da)",
+                xlab="")
+    })
+    
+    
+    
+    
+    dfg2 <- reactive({
+        
+        req(input$file1)
+        
+        inFile <- input$file1 
+        df <- read.csv(inFile$datapath, header = TRUE, sep = ";")
+        
+        df <- df[c("Molecular.Weight")]
+        
+        return(df)
+    })
+    
     output$g2 <- renderPlot({
+        rof <- dfg2()[,"Molecular.Weight"]
         
-        df1 <- data.frame()
-        
-        barplot(c(1,2),
-                ylab="idk1",
-                xlab="idk2")
+        barplot(rof,
+                ylab="rof",
+                xlab="")
     })
 }
 
