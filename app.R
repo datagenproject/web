@@ -126,9 +126,14 @@ server <- function(input, output) {
     })
     output$ro5 <- renderPlot({
       rof <- ro5d()
+      rof <- rof[!is.na(rof)]
       rof <- rof[nzchar(rof)]
-      print(rof)
-      barplot(c(30,23,45,32,22,10),
+      graphrof <- c(0,0,0,0,0,0)
+      names(graphrof) <- c("0", "1", "2", "3", "4", "5")
+      for(x in rof) {
+        graphrof[x + 1] <- graphrof[x + 1] + 1
+      }
+      barplot(graphrof,
               ylab="Cantitat",
               xlab="Numero")
     })
