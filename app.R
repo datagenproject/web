@@ -1,17 +1,17 @@
 library(shiny)
 library(stringr)
-library(ggplot2)  # for the diamonds dataset
+library(ggplot2)
 
 
-# See above for the definitions of ui and server
+c("Enllaços Rotables", "AlogP", "Polar Surface Area", "HBA Lipinski", "HBR Lipinski", "Molecular Weight", "Aromatic Rings", "Heavy Atoms")
+vars <- c("Molecular.Weight", "Polar.Surface.Area", "AlogP", "X.Rotatable.Bonds", "CX.Acidic.pKa", "CX.Basic.pKa", "CX.LogP", "Aromatic.Rings", "Heavy.Atoms", "HBA..Lipinski.", "HBD..Lipinski.")
 ui <- fluidPage(
     titlePanel("SmallMol S.L."),
     tabsetPanel(
         tabPanel("Taula",
             sidebarPanel(
                 fileInput("file1", "Choose CSV File"),
-                     
-                checkboxInput("iChEMBL.ID", label = "ChEMBL ID", value = TRUE),
+                
                 checkboxInput("iName", label = "Name"),
                 checkboxInput("iMolecular.Weight", label = "Molecular Weight"),
                 checkboxInput("iTargets", label = "Targets"),
@@ -26,26 +26,33 @@ ui <- fluidPage(
                 DT::dataTableOutput("table1")
             )
         ),
-        tabPanel("Gràfics", 
-                 fluidRow(
-                    column(6,
-                        plotOutput("g1"),
-                        plotOutput("g3"),
-                        plotOutput("g5")
-                    ),
-                    column(6,
-                        plotOutput("g2"),
-                        plotOutput("g4"),
-                        plotOutput("g6")
-                        
-                    )
+        tabPanel("Gràfics",
+                 
+                 tabsetPanel(
+                      tabPanel("k-means clustering",
+                               
+                               pageWithSidebar(
+                                 headerPanel('k-means clustering'),
+                                 sidebarPanel(
+                                   selectInput('xcol', 'X Variable', vars),
+                                   selectInput('ycol', 'Y Variable', vars, selected = vars[[2]]),
+                                   numericInput('clusters', 'Cluster count', 3, min = 1, max = 9)
+                                 ),
+                                 mainPanel(
+                                   plotOutput('plot1')
+                                 )
+                               )
+                      ),
+                      tabPanel("rule of 5",
+                               plotOutput("ro5"),
+                      )
                  )
         )
     )
 )
 
 server <- function(input, output) {
-    
+    print(class(vars))
     d1 <- reactive({
         req(input$file1)
         
@@ -67,58 +74,66 @@ server <- function(input, output) {
         return(df[include])
     })
     output$table1 <- DT::renderDataTable({
-        DT::datatable(d1(), options = list(lengthMenu = c(5, 10, 15, 20), pageLength = 15))
+        DT::datatable(d1(), options = list(lengthMenu = c(5, 10, 15, 20, 25, 30), pageLength = 10))
     })
     
-    dfg1 <- reactive({
-        
-        req(input$file1)
-        
-        inFile <- input$file1 
-        df <- read.csv(inFile$datapath, header = TRUE, sep = ";")
-        
-        df <- df[c("Molecular.Weight")]
-        
-        return(df)
+    # k-means
+    d2 <- reactive({
+      req(input$file1)
+      
+      inFile <- input$file1 
+      df <- read.csv(inFile$datapath, header = TRUE, sep = ";")
+      
+      return(df[vars])
     })
     
-    output$g1 <- renderPlot({
-        mw <- dfg1()[,"Molecular.Weight"]
- 
-        barplot(mw,
-                ylab="Molecular Weight (Da)",
-                xlab="")
+    selectedData <- reactive({
+      data <- d2();
+      xcol <- input$xcol
+      ycol <- input$ycol
+      abc <- data[, c(xcol, ycol)]
+      def <- abc[!is.na(abc[xcol]),]
+      def <- abc[!is.na(abc[ycol]),]
+      return(def)
+    })
+    
+    clusters <- reactive({
+      kmeans(selectedData(), input$clusters)
+    })
+    
+    output$plot1 <- renderPlot({
+      palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",
+                "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"))
+      
+      par(mar = c(5.1, 4.1, 0, 1))
+      plot(selectedData(),
+           col = clusters()$cluster,
+           pch = 20, cex = 3)
+      points(clusters()$centers, pch = 4, cex = 4, lwd = 4)
     })
     
     
     
     
-    dfg2 <- reactive({
-        
-        req(input$file1)
-        
-        inFile <- input$file1 
-        df <- read.csv(inFile$datapath, header = TRUE, sep = ";")
-        
-        df <- df[c("Molecular.Weight")]
-        
-        return(df)
+    # rule of five
+    ro5d <- reactive({
+      req(input$file1)
+      
+      inFile <- input$file1 
+      df <- read.csv(inFile$datapath, header = TRUE, sep = ";")
+      r <- df$X.RO5.Violations..Lipinski.
+      return(r)
     })
-    
-    output$g2 <- renderPlot({
-        rof <- dfg2()[,"Molecular.Weight"]
-        
-        barplot(rof,
-                ylab="rof",
-                xlab="")
+    output$ro5 <- renderPlot({
+      rof <- ro5d()
+      rof <- rof[nzchar(rof)]
+      print(rof)
+      barplot(c(30,23,45,32,22,10),
+              ylab="Cantitat",
+              xlab="Numero")
     })
 }
 
 shinyApp(ui = ui, server = server)
-
-
-
-
-
 
 
