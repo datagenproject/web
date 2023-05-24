@@ -52,18 +52,8 @@ server <- function(input, output) {
         inFile <- input$file1 
         df <- read.csv(inFile$datapath, header = TRUE, sep = ";")
         
-        cn <- colnames(df)
-        print(cn)
-        count <- 1
-        for(v in cn) {
-            cn[count] <- str_replace_all(v, " ", "_")
-            count <- count + 1
-        }
-        colnames(df) <- cn
-        
         include <- c("ChEMBL.ID")
         
-     
         if(input$iName) include <- append(include, "Name")
         if(input$iMolecular.Weight) include <- append(include, "Molecular.Weight")
         if(input$iTargets) include <- append(include, "Targets")
@@ -76,16 +66,9 @@ server <- function(input, output) {
         
         return(df[include])
     })
-    # output$contents <- renderTable({
-    #     d1()
-    #     
-    # })
     output$table1 <- DT::renderDataTable({
         DT::datatable(d1(), options = list(lengthMenu = c(5, 10, 15, 20), pageLength = 15))
     })
-    # output$graph <- DT::renderDataTable({
-    #     DT::datatable(iris, options = list(lengthMenu = c(5, 10, 15, 20), pageLength = 15))
-    # })
     
     dfg1 <- reactive({
         
